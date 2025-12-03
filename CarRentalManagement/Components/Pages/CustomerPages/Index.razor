@@ -5,6 +5,7 @@
 @using CarRentalManagement.Data
 @implements IAsyncDisposable
 @inject IDbContextFactory<CarRentalManagement.Data.CarRentalManagementContext> DbFactory
+@rendermode InteractiveServer
 
 <PageTitle>Index</PageTitle>
 
@@ -14,30 +15,40 @@
     <a href="customers/create">Create New</a>
 </p>
 
-<QuickGrid Class="table" Items="context.Customer">
-    <PropertyColumn Property="customer => customer.DrivingLicense" />
+<QuickGrid Class="table" Items="FilteredCustomers">
+    <PropertyColumn Property="customer => customer.DrivingLicense" Sortable="true">
+        <ColumnOptions>
+            <div class="search-box">
+                <input type="search" autofocus @bind="searchText" @bind:event="oninput" placeholder="Search..." />
+            </div>
+        </ColumnOptions>
+    </PropertyColumn>
     <PropertyColumn Property="customer => customer.Address" />
     <PropertyColumn Property="customer => customer.ContactNumber" />
     <PropertyColumn Property="customer => customer.EmailAddress" />
-    <PropertyColumn Property="customer => customer.DateCreated" />
-    <PropertyColumn Property="customer => customer.DateUpdated" />
     <PropertyColumn Property="customer => customer.CreatedBy" />
     <PropertyColumn Property="customer => customer.UpdatedBy" />
 
     <TemplateColumn Context="customer">
         <a href="@($"customers/edit?id={customer.Id}")">Edit</a> |
-        <a href="@($"customers/details?id={customer.Id}")">Details</a> |
-        <a href="@($"customers/delete?id={customer.Id}")">Delete</a>
+        <a href="@($"customers/details?id={customer.Id}")">Details</a>
+        <AuthorizeView Roles="Administrator">
+            | <a href="@($"customers/delete?id={customer.Id}")">Delete</a>
+        </AuthorizeView>
     </TemplateColumn>
 </QuickGrid>
 
 @code {
     private CarRentalManagementContext context = default!;
+    private string searchText = "";
 
     protected override void OnInitialized()
     {
         context = DbFactory.CreateDbContext();
     }
+
+    // Filter Logic for Search (Practice 111)
+    private IQueryable<Customer> FilteredCustomers => context.Customer.Where(c => c.DrivingLicense.Contains(searchText));
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();
 }
